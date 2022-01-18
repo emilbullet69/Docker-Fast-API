@@ -21,7 +21,7 @@ Getting Started
 6. Download the static file from the link below:
  https://www.kaggle.com/berkeleyearth/climate-change-earth-surface-temperature-data?select=GlobalLandTemperaturesByCity.csv
 
-7. Unzip it and put it into the :code:`temp_folder` in the project’s root
+7. Unzip it and put it into the :code:`temp_dir` in the project’s root
 
 8. Run :code:`docker-compose up -d`
 9. Wait until both containers are up and running, then visit http://localhost:8090/docs
