@@ -86,6 +86,6 @@ docs/_build/
 .idea_modules/
 
 # random
-.csv
+*.csv
 .DS_Store
 
