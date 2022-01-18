@@ -13,7 +13,7 @@ services:
       db_pass: supersecretpass
       db_schema: temperatures
       db_host: mysql
-      trial_run: True
+      trial_run: 1
   mysql:
     image: mysql:8.0.17
     volumes:

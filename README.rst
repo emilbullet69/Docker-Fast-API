@@ -31,7 +31,7 @@ Important note!: The DB is empty. It is getting filled up during the container s
 
 By default, the API is running in test mode, which means that the full data is not loaded. Only the first 30k elements.
 
-If you want to query all the data just like as it would be in prod, you need to change :code:`trial_run` env variable to **False** in the **docker-compose.yml** file.
+If you want to query all the data just like as it would be in prod, you need to change :code:`trial_run` env variable to **0** in the **docker-compose.yml** file.
 Then stop and delete the existing containers and do the step 8 again. Be aware, with full data loading, it might take a few minutes until the containers are up again.
 
 Examples
