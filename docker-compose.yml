@@ -1,0 +1,30 @@
+version: '3.9'
+
+services:
+  challenge_api:
+    restart: always
+    build: .
+    links:
+      - "mysql"
+    ports:
+      - 8090:8090
+    environment:
+      db_user: root
+      db_pass: supersecretpass
+      db_schema: temperatures
+      db_host: mysql
+      trial_run: True
+  mysql:
+    image: mysql:8.0.17
+    volumes:
+      - mysql-data:/var/lib/mysql
+    security_opt:
+      - seccomp:unconfined
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: supersecretpass
+      MYSQL_DATABASE: temperatures
+    ports:
+      - 3306:3306
+volumes:
+  mysql-data:

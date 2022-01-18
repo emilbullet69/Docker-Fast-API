@@ -86,4 +86,6 @@ docs/_build/
 .idea_modules/
 
 # random
-#temp_dir
+temp_dir
+.DS_Store
+

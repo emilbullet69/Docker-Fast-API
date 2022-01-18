@@ -1,0 +1,16 @@
+# Git
+.git
+.gitignore
+.gitattributes
+.github
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Documentation
+README.rst
+
+# JetBrains
+.idea
