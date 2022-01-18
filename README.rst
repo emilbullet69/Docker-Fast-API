@@ -13,12 +13,26 @@ Fast API for minimal db interaction
 Getting Started
 ################
 
-Build a docker image
+1. Clone Repo
+2. Install Docker
+3. Install Docker, Docker-Compose
+4. Make sure that docker daemon is configured and  running
+5. Navigate to cloned repo folder
+6. Download the static file from the link below:
+ https://www.kaggle.com/berkeleyearth/climate-change-earth-surface-temperature-data?select=GlobalLandTemperaturesByCity.csv
 
-Installing
-##############
+7. Unzip it and put it into the :code:`temp_folder` in the project’s root
 
-Run in a docker container
+8. Run :code:`docker-compose up -d`
+9. Wait until both containers are up and running, then visit http://localhost:8090/docs
+10. Here you can experiment with the functionality using a nice Swagger UI. Docu also available there.
+
+Important note!: The DB is empty. It is getting filled up during the container startup.
+
+By default, the API is running in test mode, which means that the full data is not loaded. Only the first 30k elements.
+
+If you want to query all the data just like as it would be in prod, you need to change :code:`trial_run` env variable to **False** in the **docker-compose.yml** file.
+Then stop and delete the existing containers and do the step 8 again. Be aware, with full data loading, it might take a few minutes until the containers are up again.
 
 Examples
 ###############
@@ -193,9 +207,37 @@ Emil
 Documentation
 ##############
 
-http://localhost:8000/docs
+http://localhost:8090/docs
 
-Contribution
+Comments
 #############
 
-If you have any questions along the way, feel free to ask them.
+Challenges were mainly coming from my constant wish to make everything as if it would be a POC for production.
+
+E.g: Shoud I use env variables for credentials, or a config.ini is enough.
+Ideal would be a keepass api to retrieve passwords but that would require much more effort.
+
+Decided to use README.rst instead of .md because restructured text can be easily pulled and used as docu in Confluence for example.
+
+Another example is Django vs Flask vs Open API or whatever.
+Django would be an overkill for such a small project.
+I decided to go with Fast API, as it has the Swagger UI supported out of the box which is a minimalistic UI for user interaction.
+Also it is lightweight and visualizing some docu related to endpoint usage.
+
+Was hesitating if I should add connection pooling. Should have added it as there are no real down sides.
+
+Wanted to use Selenium to download the static file on startup.
+Just to make things one-click.
+Decided not to do it as it wasn't one of the tasks, so could be implemented in next iterations.
+
+Planned to add more user input validation and more meaningful response patterns.
+
+Was thinking trough a concept for more detailed aggregation as not immediately noticed that all datapoints are not daily but monthly.
+
+I know that it is much better to clarify stuff beforehand but, was mainly working on this stuff on Saturday and Sunday, so would not make much sense to wait till Monday for the answers. If that would go to prod, I could be quite annoying with all the questions.
+Same applies for unit and integration tests.
+All the specified tasks are completed. The existing code base is more than enough to make a decision regarding my coding skills.
+Please let me know if you
+expect me to write here extensive unit and integration tests. Otherwise I would skip it as this is just a coding challenge.
+
+Overall I've spent on the whole challenge around 12 hours.
