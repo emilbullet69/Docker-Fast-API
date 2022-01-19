@@ -1,22 +1,20 @@
-import time
 import json
 from pathlib import Path
-from typing import Dict
 
 import pandas as pd
 from loguru import logger
 from fastapi import FastAPI, Response
-from starlette.middleware import Middleware
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
-from starlette_context import context, plugins
-from starlette_context.middleware import ContextMiddleware
-
+from starlette_context import context
 
 from chapi.config import define_config
 from chapi.db_connector import DbConnector
-from chapi.utils import configure_logger, read_local_file
+from chapi.utils import configure_logger
+from chapi.utils import read_local_file
+from chapi.utils import user_input_to_df
+from chapi.utils import aggregate_data
+from chapi.utils import transform_optional_user_input
 from chapi.models import InsertRequest, UpdateRequest, AggregateReq
+from chapi.middleware import configure_middleware
 
 
 directory = Path(__file__).parent
@@ -24,34 +22,7 @@ TEMP_DIR = directory.parent.joinpath("temp_dir")
 TEMP_DIR.mkdir(parents=True, exist_ok=True)
 CONFIG = define_config()
 DB_CONNECTOR = DbConnector(CONFIG)
-
-
-class LoggerMiddleware(BaseHTTPMiddleware):
-    """
-    Middleware to log specific info.
-    """
-    async def dispatch(self, request: Request, call_next):
-        x_requests_id = context.data["X-Request-ID"]
-        logger.info(f" {x_requests_id} | {request.url.path} ")
-        logger.info(f" {x_requests_id} | {request.headers} ")
-        start_time = time.perf_counter()
-
-        response = await call_next(request)
-
-        process_time = (time.perf_counter() - start_time)
-        formatted_process_time = f'{process_time:0.4f}'
-        response.headers["X-Processes-Time"] = formatted_process_time
-        logger.info(f" {x_requests_id} | finished after {formatted_process_time}")
-        return response
-
-
-middleware = [
-    Middleware(
-        ContextMiddleware,
-        plugins=(plugins.RequestIdPlugin(), plugins.CorrelationIdPlugin()),
-    ),
-    Middleware(LoggerMiddleware),
-]
+middleware = configure_middleware()
 
 app = FastAPI(title="Challenge API", version="Alpha", middleware=middleware)
 
@@ -100,12 +71,12 @@ def create_single(user_input: InsertRequest, response: Response) -> str:
     data_to_add = user_input_to_df(user_input)
 
     try:
-        logger.info(f'{job_id} | Adding new entry to Global_Land_Temperatures_By_City table: {data_to_add}')
+        logger.info(f"{job_id} | Adding new entry to Global_Land_Temperatures_By_City table: {data_to_add}")
         DB_CONNECTOR.df_to_db(data_to_add, "Global_Land_Temperatures_By_City", "append")
-        logger.success(f'{job_id} | New entry was added to Global_Land_Temperatures_By_City table: {data_to_add}')
+        logger.success(f"{job_id} | New entry was added to Global_Land_Temperatures_By_City table: {data_to_add}")
         res = json.dumps({"msg": {0: "SUCCESS"}})
     except Exception as e:
-        logger.error(f'{job_id} | Error: {e}')
+        logger.error(f"{job_id} | Error: {e}")
         response.status_code = 400
         res = json.dumps({"msg": {0: f"{e}"}})
     return res
@@ -142,7 +113,7 @@ def update_existing(user_input: UpdateRequest, response: Response) -> str:
         else:
             res = update_entry(job_id, response, user_input, update_string)
     else:
-        logger.warning(f'{job_id} | At least avg_temp or avg_unc should be given or both')
+        logger.warning(f"{job_id} | At least avg_temp or avg_unc should be given or both")
         response.status_code = 400
         res = json.dumps({"msg": {0: "At least avg_temp or avg_unc should be given or both"}})
     return res
@@ -185,37 +156,10 @@ def sort_data(user_input: AggregateReq, response: Response) -> str:
         suspect = aggregate_data(df, job_id, user_input)
         res = json.dumps(suspect, ensure_ascii=False, default=str)
     except Exception as e:
-        logger.error(f'{job_id} | Error: {e}')
+        logger.error(f"{job_id} | Error: {e}")
         response.status_code = 400
         res = json.dumps({"msg": {0: f"{e}"}})
     return res
-
-
-def aggregate_data(df: pd.DataFrame,
-                   job_id: str,
-                   user_input: AggregateReq) -> Dict:
-    """
-    Getting the maximum monthly average temperature for each unique city within the time range
-     but returning the top demanded
-    Args:
-        df: Whole time range data
-        job_id: X-Request-ID
-        user_input: Aggregate request
-
-    Returns:
-
-    """
-    unique_places = df.loc[:, ["Latitude", "Longitude"]].drop_duplicates().values.tolist()
-    unique_places_max_temp = []
-    for unique_place in unique_places:
-        sub_df = df.loc[(df['Latitude'] == unique_place[0]) & (df['Longitude'] == unique_place[1])]
-        sub_df = sub_df.sort_values('AverageTemperature', ascending=False).head(1)
-        unique_places_max_temp.append(sub_df)
-    max_df = pd.concat(unique_places_max_temp)
-    max_df = max_df.sort_values('AverageTemperature', ascending=False).head(user_input.top).reset_index(drop=True)
-    suspect = max_df.to_dict("index")
-    logger.success(f'{job_id} | Top {user_input.top} AverageTemperature: {suspect}')
-    return suspect
 
 
 def get_period(job_id: str, user_input: AggregateReq) -> pd.DataFrame:
@@ -228,7 +172,7 @@ def get_period(job_id: str, user_input: AggregateReq) -> pd.DataFrame:
     Returns:
         PD dataframe with queried data
     """
-    logger.info(f'{job_id} | Request all between {user_input.from_date} and {user_input.till_date}')
+    logger.info(f"{job_id} | Request all between {user_input.from_date} and {user_input.till_date}")
     query = f"""SELECT * 
                 FROM {CONFIG.schema}.Global_Land_Temperatures_By_City
                 WHERE dt 
@@ -263,27 +207,11 @@ def define_missing_entry_response(job_id: str,
     """
     response.status_code = 202
     comment = f"Entry not exist: {user_input.city} on {user_input.date}"
-    logger.warning(f'{job_id} | {comment}')
+    logger.warning(f"{job_id} | {comment}")
     res = json.dumps({"msg": {0: f"No entry to update where city name is {user_input.city} "
                                  f"and date is {user_input.date}. "
                                  f"Use /rest/city_temp/v1/create_single endpoint to create one"}})
     return res
-
-
-def user_input_to_df(user_input: InsertRequest) -> pd.DataFrame:
-    """
-    Transforms user input into a dataframe that can be easily appended to the existing table
-    Args:
-        user_input: Create Request
-
-    Returns:
-        Pandas dataframe that is matching the table structure.
-    """
-    data_to_add = pd.DataFrame(user_input).transpose()
-    data_to_add.columns = \
-        "dt,AverageTemperature,AverageTemperatureUncertainty,City,Country,Latitude,Longitude".split(",")
-    data_to_add.drop(data_to_add.index[0], inplace=True)
-    return data_to_add
 
 
 def update_entry(job_id: str,
@@ -308,11 +236,11 @@ def update_entry(job_id: str,
                       AND `City` = '{user_input.city}'
                       LIMIT 1;"""
         DB_CONNECTOR.engine.execute(u_query)
-        logger.info(f'''{job_id} | Updated AverageTemperature and/or AverageTemperatureUncertainty 
-                    for {user_input.city} on {user_input.date}''')
+        logger.info(f"""{job_id} | Updated AverageTemperature and/or AverageTemperatureUncertainty 
+                    for {user_input.city} on {user_input.date}""")
         res = json.dumps({"msg": {0: "SUCCESS"}})
     except Exception as e:
-        logger.error(f'{job_id} | Error: {e}')
+        logger.error(f"{job_id} | Error: {e}")
         response.status_code = 400
         res = json.dumps({"msg": {0: f"{e}"}})
     return res
@@ -334,21 +262,3 @@ def get_city(user_input: UpdateRequest) -> pd.DataFrame:
                 LIMIT 1;"""
     random_city = DB_CONNECTOR.sql_query_to_pandas(query)
     return random_city
-
-
-def transform_optional_user_input(user_input: UpdateRequest) -> str:
-    """
-    Transforming optional user input to a single string that can be used in the update query
-    Args:
-        user_input: Update Request
-
-    Returns:
-        Empty string or value assigning query snippet
-    """
-    string_list = []
-    if isinstance(user_input.avg_temp, float):
-        string_list.append(f"`AverageTemperature` = {user_input.avg_temp}")
-    if isinstance(user_input.avg_unc, float):
-        string_list.append(f"`AverageTemperatureUncertainty` = {user_input.avg_unc}")
-    update_string = " AND ".join(string_list)
-    return update_string

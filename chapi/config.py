@@ -8,7 +8,7 @@ class Config:
     passwd: str
     schema: str
     host: str
-    trial_run: bool
+    trial_run: int
 
     def __post_init__(self):
         self.uri = f"mysql+pymysql://{self.user}:{self.passwd}@{self.host}:3306/{self.schema}?local_infile=1"
@@ -24,7 +24,7 @@ def define_config() -> Config:
     passwd = os.environ.get("db_pass")
     schema = os.environ.get("db_schema")
     host = os.environ.get("db_host")
-    trial_run = os.environ.get("trial_run")
+    trial_run = int(os.environ.get("trial_run"))
 
     config = Config(
         user=user,

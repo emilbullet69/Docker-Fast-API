@@ -22,10 +22,11 @@ Getting Started
  https://www.kaggle.com/berkeleyearth/climate-change-earth-surface-temperature-data?select=GlobalLandTemperaturesByCity.csv
 
 7. Unzip it and put it into the :code:`temp_dir` in the project’s root
-
 8. Run :code:`docker-compose up -d`
 9. Wait until both containers are up and running, then visit http://localhost:8090/docs
-10. Here you can experiment with the functionality using a nice Swagger UI. Docu also available there.
+10. Expand the needed endpoint > click on :code:`Try it out` button> Modify the request as you wish > Click :code:`Execute`
+
+Here you can experiment with the functionality using a nice Swagger UI. Docu also available.
 
 Important note!: The DB is empty. It is getting filled up during the container startup.
 
@@ -231,6 +232,8 @@ Just to make things one-click.
 Decided not to do it as it wasn't one of the tasks, so could be implemented in next iterations.
 
 Planned to add more user input validation and more meaningful response patterns.
+E.g: Doing all the DB interaction using SqlAlchemy's ORM instead of plain SQL.
+That would also eliminate the security risk of SQL injections.
 
 Was thinking trough a concept for more detailed aggregation as not immediately noticed that all datapoints are not daily but monthly.
 
